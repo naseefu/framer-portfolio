@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
-import { SplitWords } from './Splittext'
+import { SplitWords } from './SplitText'
 
 const stack = [
   { name: 'Java',        category: 'Programming Language', emoji: '☕', desc: 'A versatile and robust programming language ideal for backend development. Known for its platform independence and reliability, Java is widely used for building scalable enterprise-level applications.', color: '#f5f0e8', accent: '#c8860a' },
