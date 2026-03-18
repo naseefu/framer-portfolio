@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { SplitLines } from './Splittext'
+import { SplitLines } from './SplitText'
 import MagneticButton from './MagenticButton'
 
 const footerLinks = [
