@@ -585,7 +585,7 @@ button { background: none; border: none; font-family: var(--font); cursor: point
 @media (max-width: 768px) {
   body { font-size: 15px; }
   * { cursor: auto !important; }
-  .hero { min-height: auto; }
+  .hero { min-height: auto; padding-top: 0px;}
   .hero-inner { grid-template-columns: 1fr !important; min-height: auto; }
   .hero-left { padding: 40px 20px 32px; border-right: none; border-bottom: 1px solid var(--border); }
   .hero-avatar-wrap { width: 180px !important; height: 180px !important; }
