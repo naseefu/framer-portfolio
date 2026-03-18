@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { motion, useInView } from 'framer-motion'
-import { SplitWords } from './Splittext'
+import { SplitWords } from './SplitText'
 
 const expertise = [
   { num: '1',  title: 'Full Stack Development',     desc: 'Proficient in building web applications using ReactJS for the frontend and Spring Boot for the backend.' },
