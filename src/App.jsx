@@ -12,7 +12,7 @@ import ArticleDetail from './pages/ArticleDetail'
 import AwardsPage from './pages/AwardsPage'
 import ContactPage from './pages/ContactPage'
 import WorksPage from './pages/WorksPage'
-import ScrollToTop from './Components/ScrollToTop'
+import ScrollToTop from './components/ScrollToTop'
 import { ThemeProvider } from './context/ThemeContext'
 
 function AnimatedRoutes() {

@@ -3,7 +3,7 @@ import { motion, useInView } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import articles from '../data/articles.json'
 import PageTransition from '../components/PageTransition'
-import { SplitWords } from '../Components/Splittext'
+import { SplitWords } from '../components/Splittext'
 
 function ArticleCard({ article, index }) {
   const ref = useRef(null)
