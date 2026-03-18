@@ -1,0 +1,171 @@
+[
+  {
+    "id": "spring-ai-agents",
+    "num": "01",
+    "title": "Building Agentic AI Applications with Spring AI",
+    "excerpt": "A deep dive into creating tool-calling, context-aware AI agents using Spring AI, Groq, and the @Tool annotation pattern in Spring Boot 3.",
+    "date": "Mar 2025",
+    "readTime": "8 min read",
+    "tags": ["Spring AI", "Java", "LLM", "Agent"],
+    "emoji": "🤖",
+    "bannerImage": "https://github.com/naseefu/portfolio/blob/main/SpringAIImage.png?raw=true",
+    "sections": [
+      {
+        "heading": "What is an Agentic AI Application?",
+        "body": "An agentic AI application goes beyond simple prompt-response cycles. Instead of just answering questions, an agent can reason about a problem, decide which tools to invoke, execute them, observe the results, and continue reasoning until it reaches a satisfying answer. This loop — Reason → Act → Observe — is what makes an agent powerful.\n\nSpring AI brings this pattern into the familiar Spring Boot ecosystem, letting you annotate plain Java methods with @Tool and have the LLM decide when to call them."
+      },
+      {
+        "heading": "Setting Up Spring AI with Groq",
+        "body": "Add the Spring AI BOM and the OpenAI starter (Groq is OpenAI-compatible) to your pom.xml. Then configure your application.yml with the Groq base URL and your API key.\n\nGroq's llama3-70b-8192 and mixtral-8x7b models are fast and free-tier friendly, making them ideal for development. For production, you can swap to GPT-4o or Claude via a single config change — Spring AI abstracts the provider."
+      },
+      {
+        "heading": "Defining Tools with @Tool",
+        "body": "Any Spring bean method annotated with @Tool becomes available to the LLM. The annotation accepts a name and description — the description is crucial because the model reads it to decide when to invoke the tool.\n\nFor example, a getAlertStatus(String alertId) method described as 'Get the current delivery status of a notification alert by its ID' will be called automatically when a user asks 'What happened to alert #1234?'. The LLM extracts the alertId from the conversation and passes it as a parameter."
+      },
+      {
+        "heading": "Guardrails: Keeping the Agent On-Topic",
+        "body": "Without guardrails, users can jailbreak the agent or ask it to do things outside its domain. In Alert Hub Agent, I implemented a three-layer pipeline: topic restriction (reject questions unrelated to alerts), rate limiting (Redis-backed per-user token bucket), and harmful input detection (regex + LLM-as-judge).\n\nThe topic restriction guard runs before the main LLM call, saving tokens and latency. It uses a lightweight classifier prompt: 'Is the following question related to notification alerts? Answer YES or NO.' — cheap, fast, and surprisingly accurate."
+      },
+      {
+        "heading": "SSE Streaming with Flux",
+        "body": "Real-time token streaming dramatically improves perceived performance. Spring AI's ChatClient returns a Flux<String> when you call .stream().content(). Wrapping this in a Spring WebFlux endpoint with MediaType.TEXT_EVENT_STREAM_VALUE lets the browser render tokens as they arrive.\n\nOne gotcha: never use ThreadLocal inside a reactive chain. I learned this the hard way when session context disappeared mid-stream. Use ConcurrentHashMap keyed by sessionId instead, and pass context explicitly through the Flux pipeline."
+      },
+      {
+        "heading": "Key Takeaways",
+        "body": "Spring AI makes agentic patterns accessible to any Java developer. The @Tool annotation is elegantly simple, the ChatClient API is fluent and testable, and the provider abstraction means you're never locked in. The main challenges are guardrails (invest here early), reactive threading pitfalls (avoid ThreadLocal), and model selection (fast cheap models for guards, powerful models for reasoning)."
+      }
+    ]
+  },
+  {
+    "id": "kafka-consumer-groups",
+    "num": "02",
+    "title": "Kafka Consumer Groups & Partition Scaling in Spring Boot",
+    "excerpt": "Everything you need to know about Kafka consumer groups, partition rebalancing, offset strategies, and scaling Spring Boot consumers correctly.",
+    "date": "Feb 2025",
+    "readTime": "6 min read",
+    "tags": ["Kafka", "Spring Boot", "Distributed Systems"],
+    "emoji": "⚡",
+    "bannerImage": "https://coralogix.com/wp-content/uploads/2019/06/4-6.png",
+    "sections": [
+      {
+        "heading": "The Mental Model: Partitions and Parallelism",
+        "body": "A Kafka topic is split into partitions, and each partition is consumed by exactly one consumer within a consumer group at any given time. This is the fundamental constraint that governs scaling.\n\nIf you have 6 partitions and 3 consumers in a group, each consumer gets 2 partitions. Add a 4th consumer and Kafka rebalances: some consumers get 1 partition, some get 2. Add a 7th consumer and one sits idle — you can never have more active consumers than partitions."
+      },
+      {
+        "heading": "Configuring Consumer Groups in Spring Boot",
+        "body": "In Spring Boot, setting spring.kafka.consumer.group-id in application.yml is all you need for basic group membership. For fine-grained control, use @KafkaListener(topics = \"alerts\", groupId = \"alert-processors\", concurrency = \"3\") — the concurrency attribute spins up 3 consumer threads within the same JVM, each owning its own partition assignment.\n\nFor Alert Hub, I set concurrency to match the partition count per topic, ensuring maximum parallelism from a single pod before needing to scale horizontally."
+      },
+      {
+        "heading": "Offset Management: At-Least-Once vs Exactly-Once",
+        "body": "The default auto-commit strategy commits offsets every 5 seconds regardless of whether your processing succeeded. This can cause silent data loss if your consumer crashes after committing but before finishing processing.\n\nFor reliability, disable auto-commit (spring.kafka.consumer.enable-auto-commit=false) and use manual acknowledgement: Acknowledgment ack in your @KafkaListener method, calling ack.acknowledge() only after successful processing. This gives you at-least-once semantics — messages may be reprocessed after a crash, but never silently dropped."
+      },
+      {
+        "heading": "Handling Rebalances Gracefully",
+        "body": "Consumer group rebalances happen when consumers join or leave. During a rebalance, all consumption pauses — this is the 'stop the world' moment of Kafka. With many partitions and frequent deployments, rebalances can cause noticeable latency spikes.\n\nMitigations: use static group membership (group.instance.id) to give consumers a stable identity across restarts, tune session.timeout.ms and heartbeat.interval.ms appropriately, and consider incremental cooperative rebalancing (partition.assignment.strategy=CooperativeStickyAssignor) which allows unaffected partitions to keep consuming during rebalance."
+      },
+      {
+        "heading": "The NewTopic Bean in Spring Boot",
+        "body": "Defining a @Bean of type NewTopic in Spring Boot auto-creates the topic at startup if it doesn't exist. Critically, if the topic already exists, Spring does NOT modify it — so if you change the partition count in code, it has no effect on an existing topic.\n\nTo resize partitions on an existing topic, use the Kafka CLI: kafka-topics.sh --alter --topic alerts --partitions 12. Remember: you can only increase partitions, never decrease them, as decreasing would require redistributing existing messages."
+      }
+    ]
+  },
+  {
+    "id": "virtual-threads-spring",
+    "num": "03",
+    "title": "Virtual Threads in Spring Boot 3 — A Practical Guide",
+    "excerpt": "How Java 21 virtual threads changed everything about non-blocking I/O in Spring Boot, and how to use them without shooting yourself in the foot.",
+    "date": "Jan 2025",
+    "readTime": "5 min read",
+    "tags": ["Java 21", "Spring Boot", "Concurrency"],
+    "emoji": "🧵",
+    "bannerImage": "https://media.licdn.com/dms/image/v2/D5612AQGmUIcLl_hc7g/article-cover_image-shrink_720_1280/B56ZeduhiEHoAI-/0/1750697917249?e=2147483647&v=beta&t=uN1NAYGw8Q4vnBdVPXYPjvAmesNj6mfqKYftNViA0FM",
+    "sections": [
+      {
+        "heading": "Why Virtual Threads Matter",
+        "body": "Traditional platform threads are expensive — each one consumes ~1MB of stack memory and requires OS-level context switching. A server with 10,000 concurrent requests needs 10,000 threads, quickly exhausting memory and CPU. This is why reactive programming (WebFlux, RxJava) emerged: non-blocking I/O with a small thread pool.\n\nVirtual threads change the equation entirely. They're cheap — millions can exist simultaneously — and they're managed by the JVM, not the OS. When a virtual thread blocks on I/O, the JVM parks it and runs another on the same carrier thread. You get non-blocking performance with blocking code."
+      },
+      {
+        "heading": "Enabling Virtual Threads in Spring Boot 3.2+",
+        "body": "One property is all it takes: spring.threads.virtual.enabled=true. Spring Boot automatically configures Tomcat to use virtual threads for request handling, and @Async tasks will also use virtual threads.\n\nFor Spring Boot 3.1 or manual configuration, define a TomcatProtocolHandlerCustomizer bean that sets the executor to Executors.newVirtualThreadPerTaskExecutor(). The change is transparent to your application code — your @RestController methods look exactly the same."
+      },
+      {
+        "heading": "The ThreadLocal Trap",
+        "body": "Virtual threads expose a long-standing anti-pattern: ThreadLocal misuse. Libraries that use ThreadLocal for request-scoped data (Spring Security's SecurityContextHolder, MDC logging) work fine because they're reset per-request. The problem is libraries that pool or cache state in ThreadLocal assuming thread reuse — virtual threads are NOT reused.\n\nIn Alert Hub, I hit this when using a connection pool library that cached connections in ThreadLocal. Each virtual thread created a new connection rather than reusing pooled ones, exhausting the database. The fix: ensure your connection pool is configured to be virtual-thread-aware (HikariCP 5.1+ handles this correctly)."
+      },
+      {
+        "heading": "Pinning: The Silent Performance Killer",
+        "body": "A virtual thread gets 'pinned' to its carrier thread when it enters a synchronized block or calls a native method. While pinned, the carrier thread cannot run other virtual threads — negating the benefit.\n\nIdentify pinning with -Djdk.tracePinnedThreads=full JVM flag. Common culprits: synchronized methods in legacy libraries (use ReentrantLock instead), and JDBC drivers with synchronized internals (most modern drivers have addressed this). PostgreSQL's pgjdbc 42.7+ and MySQL Connector/J 8.2+ are virtual-thread-safe."
+      },
+      {
+        "heading": "When to Use Virtual Threads vs WebFlux",
+        "body": "Virtual threads excel at I/O-bound workloads with blocking code — exactly what most Spring MVC applications do. If you're writing new code or maintaining an MVC app, virtual threads are the right choice: simpler code, excellent performance, familiar debugging.\n\nWebFlux still has advantages for streaming scenarios (SSE, WebSocket), back-pressure requirements, and extremely high fan-out with many concurrent downstream calls. For Alert Hub's SSE streaming, I kept WebFlux for the streaming endpoint while using virtual threads for all synchronous processing."
+      }
+    ]
+  },
+  {
+    "id": "redis-patterns",
+    "num": "04",
+    "title": "Redis Caching Patterns for High-Throughput Spring Apps",
+    "excerpt": "Cache-aside, write-through, and TTL strategies for using Redis effectively in Spring Boot applications handling millions of events daily.",
+    "date": "Dec 2024",
+    "readTime": "7 min read",
+    "tags": ["Redis", "Caching", "Spring Boot", "Performance"],
+    "emoji": "🗄️",
+    "bannerImage": "https://ps.w.org/redis-cache/assets/banner-1544x500.png?rev=2315420",
+    "sections": [
+      {
+        "heading": "Cache-Aside: The Default Pattern",
+        "body": "Cache-aside (lazy loading) is the most common pattern: check the cache first, on miss load from the database and populate the cache, on hit return cached data. Spring Boot's @Cacheable annotation implements this with a single annotation.\n\nThe key design decision is TTL. Too short and you get cache churn with many database hits. Too long and users see stale data. For Alert Hub's channel routing config — which changes rarely — I set a 10-minute TTL. For user session data, 5 minutes. For real-time alert status, no caching at all."
+      },
+      {
+        "heading": "Write-Through: Keeping Cache and DB in Sync",
+        "body": "Write-through updates the cache at the same time as the database on every write. Use Spring's @CachePut to implement this. The benefit: the cache is always fresh, eliminating the cold-start problem where the first request after a TTL expiry hits the database.\n\nThe cost: every write pays the cache update overhead. For high-write scenarios this adds latency. Evaluate whether your read/write ratio justifies write-through — it makes sense when reads heavily outnumber writes, which is true for configuration data but not for event logs."
+      },
+      {
+        "heading": "Rate Limiting with Redis Token Bucket",
+        "body": "Redis is perfect for distributed rate limiting because it's atomic and shared across all pods. The token bucket algorithm: each user gets a bucket with N tokens. Each request consumes one token. Tokens refill at a fixed rate. If the bucket is empty, reject the request.\n\nImplement with Redis MULTI/EXEC transactions or Lua scripts for atomicity. In Alert Hub's AI guardrail pipeline, I limit each user to 20 AI requests per minute using a sliding window counter: INCR user:{id}:minute:{timestamp/60}, with EXPIRE set to 61 seconds."
+      },
+      {
+        "heading": "Avoiding Cache Stampede",
+        "body": "Cache stampede (also called thundering herd) occurs when a popular cached item expires and thousands of concurrent requests all miss the cache simultaneously, flooding the database.\n\nMitigations: probabilistic early expiration (refresh the cache slightly before it expires with some probability), mutex locks (only one thread fetches from DB while others wait), or background refresh (a scheduled job proactively refreshes hot keys before they expire). For Alert Hub's routing config, I use background refresh — a @Scheduled task refreshes the cache every 9 minutes, so the 10-minute TTL never actually fires in production."
+      },
+      {
+        "heading": "Redis Data Structures Beyond String",
+        "body": "Most developers use Redis as a key-value string store, but the richer data structures unlock more elegant solutions. Hash maps for storing entity fields without serialization overhead. Sorted sets for leaderboards and time-ordered data. HyperLogLog for approximate unique-count analytics (used in Alert Hub for per-channel daily unique recipient counts — 99.8% accuracy at 1/100th the memory of a Set).\n\nFor chat history in the AI agent, I use a Redis List with LPUSH/LTRIM — push new messages to the head, trim to the last N messages. O(1) operations regardless of history length."
+      }
+    ]
+  },
+  {
+    "id": "jwt-spring-security",
+    "num": "05",
+    "title": "JWT Authentication with Spring Security 6",
+    "excerpt": "Step-by-step implementation of stateless JWT authentication in Spring Boot 3 using the latest Spring Security 6 lambda DSL configuration.",
+    "date": "Nov 2024",
+    "readTime": "10 min read",
+    "tags": ["JWT", "Spring Security", "Authentication"],
+    "emoji": "🔐",
+    "bannerImage": "https://miro.medium.com/v2/resize:fit:1400/1*eNeAR4u9ji45YYn2F7Frxw.jpeg",
+    "sections": [
+      {
+        "heading": "Why JWT for Stateless Auth",
+        "body": "Traditional session-based auth stores session state on the server. This works fine for monoliths but becomes a problem when you scale horizontally — request B might hit a different pod than request A, which doesn't have the session. You need sticky sessions or a shared session store.\n\nJWT solves this by encoding all claims (userId, roles, expiry) inside a cryptographically signed token that the client sends with every request. The server validates the signature and trusts the claims — no database lookup, no shared state. Perfect for microservices."
+      },
+      {
+        "heading": "Spring Security 6: The New Lambda DSL",
+        "body": "Spring Security 6 dropped the old WebSecurityConfigurerAdapter extend pattern. The new approach is a SecurityFilterChain @Bean with lambda DSL. The syntax is cleaner and more explicit about what's configured.\n\nKey settings: disable CSRF (stateless APIs don't need it), set session management to STATELESS, configure your public endpoints with permitAll(), and add your JwtAuthenticationFilter before UsernamePasswordAuthenticationFilter."
+      },
+      {
+        "heading": "The JWT Filter",
+        "body": "Create a OncePerRequestFilter that extracts the token from the Authorization header, validates it, extracts the username, loads UserDetails, and sets the SecurityContextHolder. The filter runs on every request before Spring Security's own authentication.\n\nCritical detail: only set authentication in the context if (authentication == null) — don't overwrite existing authentication. And always call filterChain.doFilter(request, response) whether or not the token is valid, letting the security config decide what to do with unauthenticated requests."
+      },
+      {
+        "heading": "Token Generation and Validation with JJWT",
+        "body": "JJWT (io.jsonwebtoken) is the de-facto standard for JWT in Java. Use Jwts.builder() to create tokens with subject (username), issuedAt, expiration, and any custom claims. Sign with HS256 and a secret key loaded from application properties.\n\nFor validation, wrap the parseClaimsJws call in a try-catch for ExpiredJwtException, MalformedJwtException, and SignatureException — each signals a different problem. Log them at DEBUG level (not WARN/ERROR — invalid tokens are routine, not exceptional) and return 401."
+      },
+      {
+        "heading": "Refresh Tokens: Handling Expiry Gracefully",
+        "body": "Short-lived access tokens (15 min) are secure but annoying if users get logged out constantly. The solution: a separate long-lived refresh token (7-30 days) stored in an HttpOnly cookie (not localStorage — not accessible to JavaScript, immune to XSS).\n\nWhen the access token expires, the client hits /auth/refresh with the refresh token cookie. The server validates the refresh token against a database record (allowing revocation), issues a new access token, and optionally rotates the refresh token. Implement refresh token rotation: each refresh token is single-use, and using a reused refresh token should invalidate the entire refresh token family."
+      }
+    ]
+  }
+]

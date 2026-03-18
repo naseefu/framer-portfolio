@@ -1,0 +1,47 @@
+[
+  {
+    "id": "star-of-month",
+    "emoji": "⭐",
+    "title": "Star of the Month Award",
+    "org": "Tata Consultancy Services",
+    "year": "Oct 2025",
+    "desc": "Awarded in recognition of outstanding contribution, dedication, and for being an inspiring role model within the team.",
+    "category": "Performance"
+  },
+  {
+    "id": "on-the-spot-team",
+    "emoji": "⚡",
+    "title": "On the Spot (Team) Award",
+    "org": "Tata Consultancy Services",
+    "year": "Oct 2025",
+    "desc": "Received for exceptional teamwork and immediate impactful contribution towards organisational goals.",
+    "category": "Teamwork"
+  },
+  {
+    "id": "tcsai-idea-igniter",
+    "emoji": "🤖",
+    "title": "tcsAI Idea Igniter",
+    "org": "Tata Consultancy Services",
+    "year": "Nov 2025",
+    "desc": "Recognized as a milestone achiever in the tcsAI Hackathon for innovative thinking and successful idea execution.",
+    "category": "Innovation"
+  },
+  {
+    "id": "tcsai-spark",
+    "emoji": "✨",
+    "title": "tcsAI Spark",
+    "org": "Tata Consultancy Services",
+    "year": "Aug 2025",
+    "desc": "Awarded for enthusiastic and prompt participation in the tcsAI Hackathon, acknowledging contributions to AI-driven innovation.",
+    "category": "Innovation"
+  },
+  {
+    "id": "learning-achievement",
+    "emoji": "📚",
+    "title": "Learning Achievement Award",
+    "org": "Tata Consultancy Services",
+    "year": "Jul 2025",
+    "desc": "Honoured for dedication to continuous learning and achieving significant milestones in professional development.",
+    "category": "Learning"
+  }
+]
