@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import PageTransition from '../components/PageTransition'
-import { SplitLines } from '../components/Splittext'
+import { SplitLines } from '../components/SplitText'
 import MagneticButton from '../components/MagenticButton'
 
 const contacts = [

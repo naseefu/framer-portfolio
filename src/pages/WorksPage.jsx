@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion, useInView } from 'framer-motion'
 import projects from '../data/Projects.json'
 import PageTransition from '../components/PageTransition'
-import { SplitWords } from '../components/Splittext'
+import { SplitWords } from '../components/SplitText'
 
 function ProjectCard({ project, index }) {
   const ref = useRef(null)

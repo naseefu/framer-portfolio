@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import awards from '../data/Awards.json'
 import PageTransition from '../components/PageTransition'
-import { SplitWords } from '../components/Splittext'
+import { SplitWords } from '../components/SplitText'
 
 function AwardCard({ award, index }) {
   const ref = useRef(null)

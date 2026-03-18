@@ -2,7 +2,7 @@ import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import projects from '../data/Projects.json'
 import PageTransition from '../components/PageTransition'
-import { SplitLines } from '../components/Splittext'
+import { SplitLines } from '../components/SplitText'
 
 export default function WorkDetail() {
   const { id } = useParams()
